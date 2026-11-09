@@ -9,7 +9,7 @@ Aplikacja typu Full-Stack zbudowana w architekturze PERN (PostgreSQL, Express, R
 
 ---
 
-## Instrukcja uruchomienia:
+## Instrukcja uruchomienia aplikacji:
 
 ### 1. Pobranie projektu i przejście do katalogu
 
@@ -18,30 +18,41 @@ git clone https://github.com
 cd wms-warehouse-management-system
 ```
 
-### 2. Instalacja zależności (Backend i Frontend)
+### 2. Konfiguracja i uruchomienie warstwy serwerowej (Backend)
 
-Uruchom poniższą komendę w głównym folderze projektu, aby zainstalować wymagane biblioteki dla obu warstw aplikacji jednocześnie:
+1. Otwórz terminal i przejdź do katalogu serwera:
+   ```bash
+   cd backend
+   ```
+2. Zainstaluj wszystkie wymagane pakiety i zależności:
+   ```bash
+   npm install
+   ```
+3. Przygotuj plik środowiskowy: skopiuj plik `.env.example`, zmień jego nazwę na `.env` i wprowadź własne dane dostępowe do lokalnej bazy danych PostgreSQL.
+4. Uruchom serwer backendowy:
+   ```bash
+   npm start
+   ```
 
-```bash
-npm run install-all
-```
+### 3. Konfiguracja i uruchomienie aplikacji klienckiej (Frontend)
 
-### 3. Konfiguracja plików środowiskowych (.env)
-
-1. Przejdź do folderu `backend`, skopiuj plik `.env.example`, zmień jego nazwę na `.env` i wprowadź swoje dane dostępowe do bazy PostgreSQL.
-2. Przejdź do folderu `frontend`, skopiuj plik `.env.example` i zmień jego nazwę na `.env`.
-
-### 4. Uruchomienie aplikacji
-
-Wpisz w głównym folderze projektu poniższe polecenie, aby jednocześnie włączyć serwer API oraz aplikację kliencką:
-
-```bash
-npm start
-```
+1. Otwórz drugi, osobny terminal i przejdź do katalogu aplikacji klienckiej:
+   ```bash
+   cd frontend
+   ```
+2. Zainstaluj wymagane pakiety i zależności:
+   ```bash
+   npm install
+   ```
+3. Przygotuj plik środowiskowy: skopiuj plik `.env.example` i zmień jego nazwę na `.env`.
+4. Uruchom aplikację kliencką React:
+   ```bash
+   npm start
+   ```
 
 ---
 
-## Struktura katalogów:
+## Struktura katalogów projektu:
 
 - `/backend` - Serwer aplikacji, logika biznesowa oraz integracja z bazą danych.
 - `/frontend` - Interfejs użytkownika (React).
