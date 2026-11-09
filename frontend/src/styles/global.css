@@ -1,0 +1,98 @@
+/* ==========================================================================
+   ZMIENNE MOTYWU I RESET GLOBALNY
+   ========================================================================== */
+:root {
+  --primary-color: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --success-color: #198754;
+  --purple-color: #6f42c1;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --secondary-color: #6c757d;
+  --bg-light: #f8fbff;
+  --dark-color: #212529;
+  --border-subtle: #e9ecef;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-light);
+  color: var(--dark-color);
+  min-height: 100vh;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* ==========================================================================
+   KOMPONENTY BAZOWE (KARTY, FORMULARZE, PRZEWIJANIE)
+   ========================================================================== */
+.card {
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+/* Ukrycie strzałek w polach numerycznych */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  appearance: textfield;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.table {
+  vertical-align: middle;
+}
+.table thead th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0.85rem 0.75rem;
+}
+.table-hover tbody tr:hover {
+  background-color: #f1f7ff !important;
+}
+
+.modal-content {
+  border-radius: 16px;
+  border: 0;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+}
+.modal-header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 1.25rem 1.5rem;
+}
+.modal-footer {
+  border-top: 1px solid var(--border-subtle);
+  padding: 1rem 1.5rem;
+}

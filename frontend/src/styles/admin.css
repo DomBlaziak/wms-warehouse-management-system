@@ -1,0 +1,56 @@
+/* ==========================================================================
+   STYLE DLA MODUŁU AUDYTU I PANELU ADMINISTRATORA
+   ========================================================================== */
+.audit-diff-container {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.audit-diff-box {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.audit-diff-box--old {
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  color: #c53030;
+}
+
+.audit-diff-box--new {
+  background-color: #f0fff4;
+  border: 1px solid #c6f6d5;
+  color: #276749;
+}
+
+/* Plakietki akcji audytowych (CREATE, UPDATE, DELETE) */
+.badge-audit-create {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  font-weight: 700;
+}
+.badge-audit-update {
+  background-color: #cff4fc;
+  color: #055160;
+  font-weight: 700;
+}
+.badge-audit-delete {
+  background-color: #f8d7da;
+  color: #842029;
+  font-weight: 700;
+}
+
+/* Prezentacja specyfikacji technicznej JSONB */
+.jsonb-tag {
+  display: inline-block;
+  background-color: #edf2f7;
+  color: #4a5568;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin: 0.15rem;
+  font-family: monospace;
+}
