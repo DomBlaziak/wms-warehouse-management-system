@@ -119,6 +119,19 @@ const getAuditSummary = (log) => {
   };
   const entityLabel = entityLabels[log.entity_type] || "obiekt";
 
+  // Pomocnicza funkcja odmiany wewnątrz podsumowania
+  const formatFieldsCount = (count) => {
+    if (count === 1) return "1 pole";
+    if (
+      count % 10 >= 2 &&
+      count % 10 <= 4 &&
+      (count % 100 < 10 || count % 100 >= 20)
+    ) {
+      return `${count} pola`;
+    }
+    return `${count} pól`;
+  };
+
   if (log.action === "USER_ROLE_CHANGED") {
     return (
       <span>
@@ -162,7 +175,7 @@ const getAuditSummary = (log) => {
       <span>
         <strong>{username}</strong> zaktualizował {entityLabel}:{" "}
         <span className="text-primary fw-semibold">{entityName}</span> (
-        {changedFields} {changedFields === 1 ? "pole" : "pól"})
+        {formatFieldsCount(changedFields)})
       </span>
     );
   }

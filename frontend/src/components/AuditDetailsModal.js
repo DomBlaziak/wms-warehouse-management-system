@@ -110,6 +110,19 @@ const formatCategoryField = (field) => {
   return parts.join(" | ");
 };
 
+// Funkcja odmieniająca słowo "pole" w zależności od liczby zmienionych elementów
+const formatFieldsCount = (count) => {
+  if (count === 1) return "1 pole";
+  if (
+    count % 10 >= 2 &&
+    count % 10 <= 4 &&
+    (count % 100 < 10 || count % 100 >= 20)
+  ) {
+    return `${count} pola`;
+  }
+  return `${count} pól`;
+};
+
 const AuditDetailsModal = ({ auditLog, categories = [], onClose }) => {
   if (!auditLog) return null;
 
@@ -138,8 +151,11 @@ const AuditDetailsModal = ({ auditLog, categories = [], onClose }) => {
       case "CREATE":
       case "INSERT":
         return `Utworzenie ${entityLabel}`;
-      case "UPDATE":
-        return `Edycja ${entityLabel}`;
+      case "UPDATE": {
+        const count = changedKeys.length;
+        const countText = count > 0 ? ` (${formatFieldsCount(count)})` : "";
+        return `Edycja ${entityLabel}${countText}`;
+      }
       case "DELETE":
         return `Usunięcie ${entityLabel}`;
       default:
