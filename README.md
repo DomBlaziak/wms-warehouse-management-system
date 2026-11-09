@@ -1,61 +1,47 @@
-# WMS - Warehouse Management System (Projekt Inżynierski)
+# WMS - System Zarządzania Magazynem (Projekt Inżynierski)
 
-System zarządzania magazynem (WMS) realizowany jako projekt inżynierski. Aplikacja typu Full-Stack zbudowana w architekturze PERN (PostgreSQL, Express, React, Node.js).
+Aplikacja typu Full-Stack zbudowana w architekturze PERN (PostgreSQL, Express, React, Node.js).
 
-## Wymagania wstępne
+## Wymagania systemowe:
 
-- **Node.js** (wersja LTS)
-- **PostgreSQL** (uruchomiony lokalnie)
+- Node.js (wersja LTS)
+- PostgreSQL (uruchomiony lokalnie)
 
 ---
 
-## Instalacja i uruchomienie lokalne
+## Instrukcja uruchomienia:
 
-### 1. Klonowanie repozytorium
+### 1. Pobranie projektu i przejście do katalogu
 
 ```bash
 git clone https://github.com
 cd wms-warehouse-management-system
 ```
 
-### 2. Konfiguracja i start Backend-u
+### 2. Instalacja zależności (Backend i Frontend)
 
-1. Przejdź do katalogu serwera:
-   ```bash
-   cd backend
-   ```
-2. Zainstaluj biblioteki:
-   ```bash
-   npm install
-   ```
-3. Stwórz plik `.env` na podstawie szablonu:
-   - Skopiuj plik `.env.example` i zmień nazwę na `.env`
-   - Uzupełnij hasło do swojej lokalnej bazy danych PostgreSQL.
-4. Uruchom serwer:
-   ```bash
-   npm run dev
-   ```
+Uruchom poniższą komendę w głównym folderze projektu, aby zainstalować wymagane biblioteki dla obu warstw aplikacji jednocześnie:
 
-### 3. Konfiguracja i start Frontend-u
+```bash
+npm run install-all
+```
 
-1. Otwórz nowy terminal w głównym folderze i przejdź do aplikacji klienckiej:
-   ```bash
-   cd frontend
-   ```
-2. Zainstaluj biblioteki:
-   ```bash
-   npm install
-   ```
-3. Stwórz plik `.env` na podstawie szablonu:
-   - Skopiuj plik `.env.example` i zmień nazwę na `.env`
-4. Uruchom aplikację:
-   ```bash
-   npm start
-   ```
+### 3. Konfiguracja plików środowiskowych (.env)
+
+1. Przejdź do folderu `backend`, skopiuj plik `.env.example`, zmień jego nazwę na `.env` i wprowadź swoje dane dostępowe do bazy PostgreSQL.
+2. Przejdź do folderu `frontend`, skopiuj plik `.env.example` i zmień jego nazwę na `.env`.
+
+### 4. Uruchomienie aplikacji
+
+Wpisz w głównym folderze projektu poniższe polecenie, aby jednocześnie włączyć serwer API oraz aplikację kliencką:
+
+```bash
+npm start
+```
 
 ---
 
-## Struktura projektu
+## Struktura katalogów:
 
-- `/backend` - Serwer API (Node.js + Express) z połączeniem do bazy danych PostgreSQL.
+- `/backend` - Serwer aplikacji, logika biznesowa oraz integracja z bazą danych.
 - `/frontend` - Interfejs użytkownika (React).
