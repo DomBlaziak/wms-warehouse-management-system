@@ -1,6 +1,3 @@
-/* ==========================================================================
-   ZMIENNE MOTYWU I RESET GLOBALNY
-   ========================================================================== */
 :root {
   --primary-color: #0d6efd;
   --primary-hover: #0b5ed7;
@@ -32,9 +29,6 @@ code {
     source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-/* ==========================================================================
-   KOMPONENTY BAZOWE (KARTY, FORMULARZE, PRZEWIJANIE)
-   ========================================================================== */
 .card {
   border: 1px solid rgba(226, 232, 240, 0.8) !important;
   border-radius: 12px;
