@@ -171,7 +171,6 @@ const updateUser = async (req, res) => {
     return res.status(400).json({ message: "Nazwisko i rola są wymagane." });
   }
 
-  // Walidacja długości hasła, jeśli zostało podane podczas edycji
   if (password && password.length < 6) {
     return res
       .status(400)
@@ -193,19 +192,22 @@ const updateUser = async (req, res) => {
 
     const currentUser = userRes.rows[0];
     const currentRoleName = await getRoleName(currentUser.role_id);
+
     if (
       String(id) === String(req.user.id) &&
       String(roleId) !== String(currentUser.role_id)
     ) {
-      return res.status(400).json({
-        message: "Nie możesz zmienić własnej roli administratora.",
-      });
+      return res
+        .status(400)
+        .json({ message: "Nie możesz zmienić własnej roli administratora." });
     }
+
     const targetFirstName = firstName || currentUser.first_name;
     const targetLastName = lastName || currentUser.last_name;
     const roleChanged = String(roleId) !== String(currentUser.role_id);
     const targetRoleName = await getRoleName(roleId);
 
+    // Generowanie unikalnego loginu z pominięciem samego siebie
     let baseUsername = generateUniqueUsername(targetFirstName, targetLastName);
     let finalUsername = baseUsername;
     let counter = 1;
@@ -218,72 +220,43 @@ const updateUser = async (req, res) => {
       counter++;
       finalUsername = `${baseUsername}${counter}`;
     }
+
     const profileChanged =
       finalUsername !== currentUser.username ||
       targetFirstName !== currentUser.first_name ||
       targetLastName !== currentUser.last_name;
     const passwordChanged = Boolean(password);
 
-    if (password) {
+    // Dynamiczne zapytanie SQL (obsługa opcjonalnej zmiany hasła w jednym miejscu)
+    let query, values;
+    if (passwordChanged) {
       const newHash = await bcrypt.hash(password, 10);
-      const query = `
+      query = `
         UPDATE users
         SET first_name = $1, last_name = $2, username = $3, role_id = $4, password_hash = $5
         WHERE id = $6
         RETURNING id, username, first_name, last_name, role_id
       `;
-      const { rows } = await db.query(query, [
+      values = [
         targetFirstName,
         targetLastName,
         finalUsername,
         roleId,
         newHash,
         id,
-      ]);
-      if (profileChanged || roleChanged || passwordChanged) {
-        await logAudit({
-          actorId: req.user.id,
-          actorRole: req.user.roleName,
-          action: roleChanged ? "USER_ROLE_CHANGED" : "UPDATE",
-          entityType: "USER",
-          entityId: id,
-          oldData: {
-            username: currentUser.username,
-            first_name: currentUser.first_name,
-            last_name: currentUser.last_name,
-            role_id: currentUser.role_id,
-            role_name: currentRoleName,
-            password_changed: false,
-          },
-          newData: {
-            username: rows[0].username,
-            first_name: rows[0].first_name,
-            last_name: rows[0].last_name,
-            role_id: rows[0].role_id,
-            role_name: targetRoleName,
-            password_changed: passwordChanged,
-          },
-        });
-      }
-      return res.json({
-        message: "Zaktualizowano dane oraz hasło użytkownika.",
-        user: rows[0],
-      });
+      ];
+    } else {
+      query = `
+        UPDATE users
+        SET first_name = $1, last_name = $2, username = $3, role_id = $4
+        WHERE id = $5
+        RETURNING id, username, first_name, last_name, role_id
+      `;
+      values = [targetFirstName, targetLastName, finalUsername, roleId, id];
     }
 
-    const query = `
-      UPDATE users
-      SET first_name = $1, last_name = $2, username = $3, role_id = $4
-      WHERE id = $5
-      RETURNING id, username, first_name, last_name, role_id
-    `;
-    const { rows } = await db.query(query, [
-      targetFirstName,
-      targetLastName,
-      finalUsername,
-      roleId,
-      id,
-    ]);
+    const { rows } = await db.query(query, values);
+
     if (profileChanged || roleChanged || passwordChanged) {
       await logAudit({
         actorId: req.user.id,
@@ -309,8 +282,11 @@ const updateUser = async (req, res) => {
         },
       });
     }
+
     return res.json({
-      message: "Zaktualizowano dane użytkownika.",
+      message: passwordChanged
+        ? "Zaktualizowano dane oraz hasło użytkownika."
+        : "Zaktualizowano dane użytkownika.",
       user: rows[0],
     });
   } catch (error) {

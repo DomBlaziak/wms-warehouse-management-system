@@ -18,7 +18,6 @@ const validateRequiredAttributes = (value) => {
     if (!field || typeof field !== "object" || Array.isArray(field)) {
       return { error: `Pole kategorii #${index + 1} ma nieprawidłowy format.` };
     }
-
     const key = typeof field.key === "string" ? field.key.trim() : "";
     const label = typeof field.label === "string" ? field.label.trim() : "";
     const type = typeof field.type === "string" ? field.type : "";
@@ -68,7 +67,6 @@ const validateRequiredAttributes = (value) => {
     }
     keys.add(key);
   }
-
   return { attributes };
 };
 

@@ -73,7 +73,6 @@ const calculateFifoAllocation = (
     const movementType = String(movement.movement_type).toUpperCase();
 
     if (!Number.isFinite(quantity) || quantity <= 0) continue;
-
     if (movementType === "IN") {
       batches.push({
         id: movement.id,
@@ -83,7 +82,6 @@ const calculateFifoAllocation = (
       });
       continue;
     }
-
     if (movementType === "OUT") {
       let quantityToSubtract = quantity;
       for (const batch of batches) {
@@ -97,7 +95,6 @@ const calculateFifoAllocation = (
       }
     }
   }
-
   const activeBatches = batches.filter((batch) => batch.quantityAvailable > 0);
   const totalAvailableQuantity = activeBatches.reduce(
     (sum, batch) => sum + batch.quantityAvailable,
@@ -122,7 +119,6 @@ const calculateFifoAllocation = (
     });
     remainingQuantity -= quantityFromBatch;
   }
-
   return {
     allocation,
     remainingQuantity,
@@ -134,10 +130,8 @@ const calculateFifoAllocation = (
 const createMovementIn = async (req, res) => {
   const { productId, quantity, unitPrice, movementDate, notes } = req.body;
   const userId = req.user.id;
-
   const parsedQty = parsePositiveInteger(quantity);
   const parsedPrice = parsePrice(unitPrice);
-
   if (
     !productId ||
     parsedQty === null ||
@@ -149,7 +143,6 @@ const createMovementIn = async (req, res) => {
         "Wszystkie wymagane pola (produkt, dodatnia ilość, cena >= 0, data) muszą być poprawnie wypełnione.",
     });
   }
-
   try {
     const result = await withTransaction(async (client) => {
       const prodRes = await client.query(
@@ -159,7 +152,6 @@ const createMovementIn = async (req, res) => {
       if (prodRes.rows.length === 0) {
         return { notFound: true };
       }
-
       const movementQuery = `
         INSERT INTO inventory_movements (product_id, user_id, movement_type, quantity, unit_price, movement_date, notes)
         VALUES ($1, $2, 'IN', $3, $4, $5, $6)
@@ -185,7 +177,6 @@ const createMovementIn = async (req, res) => {
         parsedPrice,
         productId,
       ]);
-
       return {
         movement: movementRes.rows[0],
         product: productRes.rows[0],
@@ -195,7 +186,6 @@ const createMovementIn = async (req, res) => {
     if (result.notFound) {
       return res.status(404).json({ message: "Wybrany produkt nie istnieje." });
     }
-
     return res.status(201).json({
       message: "Zarejestrowano przyjęcie towaru (PZ).",
       movement: result.movement,
@@ -232,13 +222,10 @@ const createMovementOut = async (req, res) => {
       if (prodRes.rows.length === 0) {
         return { notFound: true };
       }
-
       const product = prodRes.rows[0];
-
       if (product.quantity < parsedQty) {
         return { insufficientStock: true, currentStock: product.quantity };
       }
-
       const movementsRes = await client.query(
         `SELECT id, movement_type, quantity, unit_price, selling_price, movement_date, created_at
          FROM inventory_movements 
@@ -246,7 +233,6 @@ const createMovementOut = async (req, res) => {
          ORDER BY movement_date ASC, created_at ASC, id ASC`,
         [productId],
       );
-
       const ledgerQuantity = movementsRes.rows.reduce((total, movement) => {
         const quantity = Number(movement.quantity);
         return (
@@ -281,9 +267,7 @@ const createMovementOut = async (req, res) => {
           ledgerQuantity,
         };
       }
-
       let createdMovements = [];
-
       for (const batch of fifoResult.allocation) {
         const movementQuery = `
           INSERT INTO inventory_movements (product_id, user_id, movement_type, quantity, unit_price, selling_price, movement_date, notes)
@@ -299,10 +283,8 @@ const createMovementOut = async (req, res) => {
           movementDate,
           normalizeNotes(notes),
         ]);
-
         createdMovements.push(movementRes.rows[0]);
       }
-
       const updateProductQuery = `
         UPDATE products
         SET quantity = quantity - $1, updated_at = NOW()
@@ -313,24 +295,20 @@ const createMovementOut = async (req, res) => {
         parsedQty,
         productId,
       ]);
-
       return {
         movements: createdMovements,
         product: productRes.rows[0],
         allocation: fifoResult.allocation,
       };
     });
-
     if (result.notFound) {
       return res.status(404).json({ message: "Wybrany produkt nie istnieje." });
     }
-
     if (result.insufficientStock) {
       return res.status(400).json({
         message: `Brak wystarczającej ilości towaru na magazynie. Dostępny stan: ${result.currentStock} szt.`,
       });
     }
-
     if (result.inconsistentHistory) {
       return res.status(409).json({
         message: `Historia partii nie pokrywa wydania. Dostępne wg FIFO: ${result.availableFromHistory} szt., żądano: ${result.requestedQuantity} szt. Stan kartoteki: ${result.currentStock} szt. Wydanie anulowano.`,
@@ -339,7 +317,6 @@ const createMovementOut = async (req, res) => {
         ledgerQuantity: result.ledgerQuantity,
       });
     }
-
     return res.status(201).json({
       message: "Zarejestrowano wydanie towaru (WZ) metodą FIFO.",
       movements: result.movements,
