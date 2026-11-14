@@ -24,7 +24,6 @@ const generateUniqueUsername = (
   const cleanFn = normalizePolishText(firstName);
   const cleanLn = normalizePolishText(lastName);
   const base = `${cleanFn.charAt(0)}.${cleanLn}`;
-
   const filteredUsers = existingUsers.filter(
     (u) => !currentUserId || String(u.id) !== String(currentUserId),
   );
@@ -36,7 +35,6 @@ const generateUniqueUsername = (
   if (!baseTaken) {
     return base;
   }
-
   let maxNum = 1;
   filteredUsers.forEach((u) => {
     const uname = u.username.toLowerCase();
@@ -160,7 +158,7 @@ const Admin = ({ user }) => {
           type: "danger",
           text: "Nowe hasło musi mieć co najmniej 6 znaków.",
         });
-        return; // Zostaje w modalu na wierzchu!
+        return;
       }
     }
 
@@ -192,7 +190,6 @@ const Admin = ({ user }) => {
       setEditingUser(null);
       await refreshUsersAndRoles();
     } catch (err) {
-      // Wyświetlamy błąd bezpośrednio wewnątrz modalu na wierzchu
       setEditMessage({
         type: "danger",
         text: err.response?.data?.message || "Nie udało się zapisać zmian.",

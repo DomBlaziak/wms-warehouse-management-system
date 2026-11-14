@@ -111,7 +111,6 @@ const MovementModal = ({ product, movementType, onSave, onClose }) => {
       if (createdDifference !== 0) return createdDifference;
       return Number(a.id) - Number(b.id);
     });
-
     sortedMovements.forEach((m) => {
       const qty = Number(m.quantity);
       const movementType = String(m.movement_type).toUpperCase();
@@ -136,9 +135,7 @@ const MovementModal = ({ product, movementType, onSave, onClose }) => {
         }
       }
     });
-
     const activeBatches = batches.filter((b) => b.quantityAvailable > 0);
-
     const targetQty = Number(quantity);
     if (targetQty <= 0) {
       return { breakdown: [], isShortage: false };
@@ -149,9 +146,7 @@ const MovementModal = ({ product, movementType, onSave, onClose }) => {
 
     for (let batch of activeBatches) {
       if (remainingNeeded <= 0) break;
-
       const qtyFromBatch = Math.min(batch.quantityAvailable, remainingNeeded);
-
       breakdown.push({
         batchId: batch.id,
         date: batch.date,
@@ -161,10 +156,8 @@ const MovementModal = ({ product, movementType, onSave, onClose }) => {
         totalPrice: qtyFromBatch * batch.unitPrice,
         isOpeningBalance: batch.isOpeningBalance,
       });
-
       remainingNeeded -= qtyFromBatch;
     }
-
     return {
       breakdown,
       isShortage: remainingNeeded > 0,

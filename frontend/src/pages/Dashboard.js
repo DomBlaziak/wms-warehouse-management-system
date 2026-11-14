@@ -332,7 +332,7 @@ const Dashboard = ({ user }) => {
 
   const weekLabel = useMemo(
     () =>
-      `${weekStart.toLocaleDateString("pl-PL")} – ${weekEnd.toLocaleDateString("pl-PL")}`,
+      `${weekStart.toLocaleDateString("pl-PL")} - ${weekEnd.toLocaleDateString("pl-PL")}`,
     [weekEnd, weekStart],
   );
 

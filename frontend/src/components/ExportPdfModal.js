@@ -155,9 +155,7 @@ const ExportPdfModal = ({
       });
       await loadPdfFonts(doc);
       doc.setFont("Arial", "normal");
-
       drawAppLogo(doc, 14, 13);
-
       doc.setFont("Arial", "bold");
       doc.setFontSize(15);
       doc.setTextColor(13, 110, 253);
@@ -200,7 +198,6 @@ const ExportPdfModal = ({
           "Wartość wg ceny sprzedaży (zł)",
         ],
       ];
-
       const tableRows = selectedProducts.map((p, index) => {
         const catName =
           categories.find((c) => String(c.id) === String(p.category_id))
