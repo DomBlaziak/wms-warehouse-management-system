@@ -267,9 +267,10 @@ const ProductModal = ({
               </h6>
               <div className="mb-4">
                 <select
-                  className="form-select"
+                  className={`form-select ${isEditMode ? "bg-light text-muted" : ""}`}
                   value={formData.categoryId}
                   onChange={handleCategoryChange}
+                  disabled={isEditMode}
                   required
                 >
                   {categories.map((c) => (
