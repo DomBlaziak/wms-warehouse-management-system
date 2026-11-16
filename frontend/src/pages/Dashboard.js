@@ -425,7 +425,7 @@ const Dashboard = ({ user }) => {
 
             {loading ? (
               <div className="text-center py-4 text-muted">
-                Ładowanie danych z bazy PostgreSQL...
+                Ładowanie danych...
               </div>
             ) : (
               <div className="table-responsive">
