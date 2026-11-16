@@ -74,7 +74,7 @@ const validateCategoryAttributes = (attributes, categoryAttributes) => {
       value === null ||
       (typeof value === "string" && value.trim() === "");
 
-    if (field.required && isEmpty) {
+    if (field.required !== false && isEmpty) {
       return `Parametr "${field.label}" jest wymagany dla tej kategorii.`;
     }
     if (isEmpty) continue;

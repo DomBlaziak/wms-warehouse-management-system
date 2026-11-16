@@ -216,7 +216,7 @@ const ProductModal = ({
     }
 
     for (const field of dynamicFields) {
-      if (field.required) {
+      if (field.required !== false) {
         const val = formData.attributes?.[field.key];
         if (val === undefined || val === null || String(val).trim() === "") {
           return setFormError(
@@ -455,7 +455,7 @@ const ProductModal = ({
                   <div className="row g-3">
                     {dynamicFields.map((field) => {
                       const value = formData.attributes[field.key] ?? "";
-                      const isRequired = Boolean(field.required);
+                      const isRequired = field.required !== false;
 
                       return (
                         <div className="col-md-6" key={field.key}>
