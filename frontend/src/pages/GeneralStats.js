@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 import "../styles/dashboard.css";
 import { getInventoryCostSummary } from "../utils/inventoryCost";
@@ -339,7 +340,10 @@ const GeneralStats = () => {
                       innerRadius={45}
                       outerRadius={85}
                       paddingAngle={4}
-                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }) =>
+                        percent >= 0.04 ? `${(percent * 100).toFixed(0)}%` : ""
+                      }
+                      labelLine={({ percent }) => percent >= 0.04}
                     >
                       {capitalByCategory.map((entry, index) => (
                         <Cell
@@ -349,6 +353,8 @@ const GeneralStats = () => {
                       ))}
                     </Pie>
                     <Tooltip
+                      isAnimationActive={false}
+                      animationDuration={0}
                       formatter={(value) => `${formatCurrency(value)} zł`}
                     />
                     <Legend
@@ -378,8 +384,9 @@ const GeneralStats = () => {
                   <BarChart
                     data={topProfitableProducts}
                     layout="vertical"
-                    margin={{ top: 5, right: 35, left: 15, bottom: 5 }}
+                    margin={{ top: 5, right: 35, left: 10, bottom: 5 }}
                   >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis
                       type="number"
                       tickLine={false}
@@ -393,18 +400,25 @@ const GeneralStats = () => {
                     <YAxis
                       type="category"
                       dataKey="name"
-                      width={120}
+                      width={150}
                       tick={{ fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip
+                      cursor={false}
+                      isAnimationActive={false}
+                      animationDuration={0}
                       formatter={(value) => [
                         `+${formatCurrency(value)} zł`,
                         "Potencjalny zysk na sztuce",
                       ]}
                     />
-                    <Bar dataKey="unitProfit" radius={[0, 8, 8, 0]}>
+                    <Bar
+                      dataKey="unitProfit"
+                      radius={[0, 8, 8, 0]}
+                      maxBarSize={32}
+                    >
                       {topProfitableProducts.map((entry, index) => (
                         <Cell
                           key={`bar-${index}`}

@@ -81,14 +81,12 @@ const ProductSearchSelect = ({ products, value, onChange }) => {
     [products, value],
   );
 
-  // Synchronizacja tekstu w inpucie z aktualnie wybranym produktem z zewnątrz
   useEffect(() => {
     if (!isOpen) {
       setQuery(getProductLabel(selectedProduct));
     }
   }, [selectedProduct, isOpen]);
 
-  // Automatyczne zamykanie listy po kliknięciu poza komponentem
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -212,6 +210,7 @@ const WmsAnalytics = () => {
 
   const [scopeType, setScopeType] = useState("CATEGORY");
   const [scopeId, setScopeId] = useState("");
+  const [hoveredPriceDot, setHoveredPriceDot] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -485,12 +484,15 @@ const WmsAnalytics = () => {
     const dataMap = {};
     filteredMovements.forEach((m) => {
       const dateKey = String(m.movement_date || m.created_at).slice(0, 10);
-      if (!dataMap[dateKey])
+      if (!dataMap[dateKey]) {
         dataMap[dateKey] = { date: dateKey, Przyjęcia: 0, Wydania: 0 };
-      if (m.movement_type === "IN")
+      }
+      if (m.movement_type === "IN") {
         dataMap[dateKey].Przyjęcia += Number(m.quantity || 0);
-      if (m.movement_type === "OUT")
+      }
+      if (m.movement_type === "OUT") {
         dataMap[dateKey].Wydania += Number(m.quantity || 0);
+      }
     });
     return Object.values(dataMap).sort(
       (a, b) => parseLocalDate(a.date) - parseLocalDate(b.date),
@@ -499,24 +501,95 @@ const WmsAnalytics = () => {
 
   const priceTimelineData = useMemo(() => {
     if (scopeType === "CATEGORY") return [];
-    return filteredMovements
+
+    const dailyMap = new Map();
+    const sortedInMovements = filteredMovements
       .filter((m) => m.movement_type === "IN")
-      .sort(
-        (a, b) =>
-          parseLocalDate(a.movement_date) - parseLocalDate(b.movement_date),
-      )
-      .map((m) => ({
-        date: String(m.movement_date).slice(0, 10),
-        cena: Number(m.unit_price || 0),
-      }));
+      .sort((a, b) => compareNewestMovements(b, a));
+
+    sortedInMovements.forEach((m) => {
+      const dateKey = String(m.movement_date || m.created_at).slice(0, 10);
+      const qty = Number(m.quantity || 0);
+      const unitPrice = Number(m.unit_price || 0);
+
+      if (!dailyMap.has(dateKey)) {
+        dailyMap.set(dateKey, {
+          date: dateKey,
+          totalQty: 0,
+          totalValue: 0,
+          deliveriesCount: 0,
+          prices: [],
+        });
+      }
+
+      const entry = dailyMap.get(dateKey);
+      entry.totalQty += qty;
+      entry.totalValue += qty * unitPrice;
+      entry.deliveriesCount += 1;
+      if (!entry.prices.some((p) => Math.abs(p - unitPrice) < 0.001)) {
+        entry.prices.push(unitPrice);
+      }
+    });
+
+    return Array.from(dailyMap.values())
+      .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date))
+      .map((entry) => {
+        const weightedAvgPrice =
+          entry.totalQty > 0
+            ? Number((entry.totalValue / entry.totalQty).toFixed(2))
+            : entry.prices[entry.prices.length - 1] || 0;
+
+        return {
+          date: entry.date,
+          cena: weightedAvgPrice,
+          totalQty: entry.totalQty,
+          deliveriesCount: entry.deliveriesCount,
+          hasMixedPrices: entry.prices.length > 1,
+          distinctPrices: entry.prices,
+        };
+      });
   }, [filteredMovements, scopeType]);
 
-  if (loading)
+  // Własny punkt na wykresie liniowym — reaguje wyłącznie po bezpośrednim najechaniu na kropkę
+  const renderPriceDot = (props) => {
+    const { cx, cy, payload, index } = props;
+    if (cx === undefined || cy === undefined) return null;
+    const isHovered = hoveredPriceDot?.date === payload.date;
+
+    return (
+      <g
+        key={`dot-${payload.date}`}
+        style={{ cursor: "pointer" }}
+        onMouseEnter={() =>
+          setHoveredPriceDot({
+            ...payload,
+            x: cx,
+            y: cy,
+            index,
+          })
+        }
+        onMouseLeave={() => setHoveredPriceDot(null)}
+      >
+        <circle cx={cx} cy={cy} r={18} fill="transparent" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={isHovered ? 9 : 7}
+          fill="#0d6efd"
+          stroke="#ffffff"
+          strokeWidth={2.5}
+        />
+      </g>
+    );
+  };
+
+  if (loading) {
     return (
       <div className="text-center py-5 fs-5 text-secondary">
         Ładowanie analizy WMS...
       </div>
     );
+  }
 
   return (
     <div
@@ -562,6 +635,7 @@ const WmsAnalytics = () => {
                 onClick={() => {
                   setScopeType("CATEGORY");
                   setScopeId(categories[0]?.id || "");
+                  setHoveredPriceDot(null);
                 }}
               >
                 Cała kategoria
@@ -571,6 +645,7 @@ const WmsAnalytics = () => {
                 onClick={() => {
                   setScopeType("PRODUCT");
                   setScopeId("");
+                  setHoveredPriceDot(null);
                 }}
               >
                 Jeden produkt
@@ -595,7 +670,10 @@ const WmsAnalytics = () => {
                 <ProductSearchSelect
                   products={products}
                   value={scopeId}
-                  onChange={setScopeId}
+                  onChange={(val) => {
+                    setScopeId(val);
+                    setHoveredPriceDot(null);
+                  }}
                 />
               )}
             </div>
@@ -604,7 +682,10 @@ const WmsAnalytics = () => {
               <select
                 className="form-select form-select-sm shadow-sm"
                 value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
+                onChange={(e) => {
+                  setTimeRange(e.target.value);
+                  setHoveredPriceDot(null);
+                }}
               >
                 <option value={7}>Ostatnie 7 dni</option>
                 <option value={30}>Ostatnie 30 dni</option>
@@ -628,7 +709,6 @@ const WmsAnalytics = () => {
                     onChange={(e) => {
                       const newStart = e.target.value || getDefaultPastStr(30);
                       setCustomStartDate(newStart);
-                      // Jeśli nowa data "od" jest późniejsza niż obecna data "do", wyrównaj datę "do"
                       if (newStart > customEndDate) {
                         setCustomEndDate(newStart);
                       }
@@ -644,10 +724,9 @@ const WmsAnalytics = () => {
                       WebkitAppearance: "none",
                     }}
                     value={customEndDate}
-                    min={customStartDate} // Blokada wyboru wcześniejszej daty niż "od"
+                    min={customStartDate}
                     onChange={(e) => {
                       const newEnd = e.target.value || getTodayStr();
-                      // Zabezpieczenie: nie pozwalamy ustawić daty "do" wcześniejszej niż "od"
                       if (newEnd >= customStartDate) {
                         setCustomEndDate(newEnd);
                       }
@@ -737,7 +816,8 @@ const WmsAnalytics = () => {
                   </ul>
                 ) : (
                   <div className="text-success fw-bold py-2">
-                    Wszystkie stany w tej kategorii są zabezpieczone.
+                    Brak wydań WZ w tym okresie — brak ryzyka wyczerpania
+                    zapasów.
                   </div>
                 )}
                 <small
@@ -854,11 +934,18 @@ const WmsAnalytics = () => {
       <div className="row mb-4">
         <div className="col-12">
           <div className="card p-4 shadow-sm border-0 bg-white">
-            <h6 className="fw-bold text-secondary mb-3">
-              {scopeType === "CATEGORY"
-                ? "Ile przyjęto i wydano"
-                : "Jak zmieniała się cena zakupu"}
-            </h6>
+            <div className="mb-3">
+              <h6 className="fw-bold text-secondary mb-0">
+                {scopeType === "CATEGORY"
+                  ? "Dzienna dynamika przyjęć (PZ) i wydań (WZ) w kategorii"
+                  : "Historia jednostkowych cen zakupu (PZ)"}
+              </h6>
+              <small className="text-muted">
+                {scopeType === "CATEGORY"
+                  ? "Zestawienie dziennej liczby przyjętych oraz wydanych sztuk w wybranym okresie"
+                  : "Kształtowanie się ceny zakupu produktu w kolejnych dniach dostaw (najedź na niebieski punkt, aby zobaczyć szczegóły)"}
+              </small>
+            </div>
 
             {scopeType === "CATEGORY" ? (
               dynamicsChartData.length === 0 ? (
@@ -868,7 +955,7 @@ const WmsAnalytics = () => {
               ) : (
                 <div style={{ width: "100%", height: 350 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dynamicsChartData}>
+                    <BarChart data={dynamicsChartData} barCategoryGap="25%">
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis
                         dataKey="date"
@@ -881,26 +968,32 @@ const WmsAnalytics = () => {
                           });
                         }}
                       />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        allowDecimals={false}
+                        padding={{ top: 16 }}
+                      />
+                      <Tooltip
+                        cursor={false}
+                        isAnimationActive={false}
+                        animationDuration={0}
+                        labelFormatter={(label) => `Data: ${label}`}
+                        formatter={(val) => `${val} szt.`}
+                      />
                       <Legend />
-                      <Line
-                        type="monotone"
+                      <Bar
                         dataKey="Przyjęcia"
-                        stroke="#198754"
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 6 }}
+                        fill="#198754"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={42}
                       />
-                      <Line
-                        type="monotone"
+                      <Bar
                         dataKey="Wydania"
-                        stroke="#dc3545"
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 6 }}
+                        fill="#dc3545"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={42}
                       />
-                    </LineChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               )
@@ -909,9 +1002,15 @@ const WmsAnalytics = () => {
                 Brak dokumentów PZ dla tego produktu w wybranym czasie.
               </p>
             ) : (
-              <div style={{ width: "100%", height: 350 }}>
+              <div
+                style={{ width: "100%", height: 350, position: "relative" }}
+                onMouseLeave={() => setHoveredPriceDot(null)}
+              >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={priceTimelineData}>
+                  <LineChart
+                    data={priceTimelineData}
+                    margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
                       dataKey="date"
@@ -926,21 +1025,77 @@ const WmsAnalytics = () => {
                     />
                     <YAxis
                       tick={{ fontSize: 11 }}
-                      domain={["dataMin - 100", "dataMax + 100"]}
-                      unit=" zł"
+                      width={80}
+                      domain={["auto", "auto"]}
+                      padding={{ top: 24, bottom: 24 }}
+                      tickFormatter={(val) =>
+                        `${Number(val).toLocaleString("pl-PL")} zł`
+                      }
                     />
-                    <Tooltip formatter={(val) => `${formatCurrency(val)} zł`} />
+                    <Legend />
                     <Line
                       type="stepAfter"
                       dataKey="cena"
                       name="Cena zakupu z PZ"
                       stroke="#0d6efd"
                       strokeWidth={3}
-                      dot={false}
-                      activeDot={{ r: 7 }}
+                      dot={renderPriceDot}
+                      activeDot={false}
+                      isAnimationActive={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
+
+                {hoveredPriceDot &&
+                  (() => {
+                    const isLast =
+                      hoveredPriceDot.index === priceTimelineData.length - 1 &&
+                      priceTimelineData.length > 1;
+                    const isFirst =
+                      hoveredPriceDot.index === 0 &&
+                      priceTimelineData.length > 1;
+                    const translateX = isLast
+                      ? "-92%"
+                      : isFirst
+                        ? "-8%"
+                        : "-50%";
+                    const translateY =
+                      hoveredPriceDot.y < 95 ? "18px" : "calc(-100% - 14px)";
+
+                    return (
+                      <div
+                        className="bg-white border rounded shadow-sm px-3 py-2 small"
+                        style={{
+                          position: "absolute",
+                          left: hoveredPriceDot.x,
+                          top: hoveredPriceDot.y,
+                          transform: `translate(${translateX}, ${translateY})`,
+                          pointerEvents: "none",
+                          zIndex: 10,
+                          whiteSpace: "nowrap",
+                          borderColor: "#cbd5e1",
+                        }}
+                      >
+                        <div className="fw-bold text-dark mb-1">
+                          Data dostawy: {hoveredPriceDot.date}
+                        </div>
+                        <div className="text-primary fw-semibold">
+                          Cena zakupu z PZ:{" "}
+                          {formatCurrency(hoveredPriceDot.cena)} zł
+                        </div>
+                        <div
+                          className="text-muted"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {hoveredPriceDot.hasMixedPrices
+                            ? `Śr. ważona z ${hoveredPriceDot.deliveriesCount} dostaw (łącznie ${hoveredPriceDot.totalQty} szt.)`
+                            : hoveredPriceDot.deliveriesCount > 1
+                              ? `${hoveredPriceDot.deliveriesCount} dostawy (łącznie ${hoveredPriceDot.totalQty} szt.)`
+                              : `Przyjęto: ${hoveredPriceDot.totalQty} szt.`}
+                        </div>
+                      </div>
+                    );
+                  })()}
               </div>
             )}
           </div>
@@ -951,16 +1106,22 @@ const WmsAnalytics = () => {
         {scopeType === "PRODUCT" && (
           <div className="col-md-6">
             <div className="card h-100 p-4 shadow-sm border-0 bg-white">
-              <h6 className="fw-bold text-secondary mb-3">
-                Ile przyjęto i wydano
-              </h6>
+              <div className="mb-3">
+                <h6 className="fw-bold text-secondary mb-0">
+                  Historia przyjęć (PZ) i wydań (WZ) produktu
+                </h6>
+                <small className="text-muted">
+                  Dzienna liczba sztuk przyjętych na stan oraz wydanych z
+                  magazynu
+                </small>
+              </div>
               {dynamicsChartData.length === 0 ? (
                 <p className="text-center text-muted mt-4">
                   Brak ruchów magazynowych w wybranym okresie.
                 </p>
               ) : (
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={dynamicsChartData}>
+                  <BarChart data={dynamicsChartData} barCategoryGap="25%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
                       dataKey="date"
@@ -973,18 +1134,30 @@ const WmsAnalytics = () => {
                         });
                       }}
                     />
-                    <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                    <Tooltip />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      allowDecimals={false}
+                      padding={{ top: 14 }}
+                    />
+                    <Tooltip
+                      cursor={false}
+                      isAnimationActive={false}
+                      animationDuration={0}
+                      labelFormatter={(label) => `Data: ${label}`}
+                      formatter={(val) => `${val} szt.`}
+                    />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
                     <Bar
                       dataKey="Przyjęcia"
                       fill="#198754"
                       radius={[4, 4, 0, 0]}
+                      maxBarSize={36}
                     />
                     <Bar
                       dataKey="Wydania"
                       fill="#dc3545"
                       radius={[4, 4, 0, 0]}
+                      maxBarSize={36}
                     />
                   </BarChart>
                 </ResponsiveContainer>
