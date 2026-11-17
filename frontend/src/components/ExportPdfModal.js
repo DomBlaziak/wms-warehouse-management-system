@@ -179,8 +179,9 @@ const ExportPdfModal = ({
       doc.text(sanitizeText(`Data raportu: ${dateStr}`), 29, 24);
       doc.text(
         sanitizeText(`Autor: ${authorName} (Rola: ${roleName})`),
-        125,
+        196,
         24,
+        { align: "right" },
       );
 
       doc.setDrawColor(220, 224, 230);
@@ -219,6 +220,8 @@ const ExportPdfModal = ({
 
       autoTable(doc, {
         startY: 34,
+        margin: { left: 14, right: 14 },
+        tableWidth: 182,
         head: tableHeaders,
         body: tableRows,
         theme: "striped",
@@ -249,17 +252,18 @@ const ExportPdfModal = ({
 
       const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 34) + 6;
 
-      if (finalY > 250) {
+      if (finalY > 255) {
         doc.addPage();
       }
 
-      const boxY = finalY > 250 ? 15 : finalY;
+      const boxY = finalY > 255 ? 15 : finalY;
+      const boxHeight = 30;
 
       doc.setFillColor(248, 249, 250);
       doc.setDrawColor(222, 226, 230);
-      doc.roundedRect(14, boxY, 182, 38, 2, 2, "FD");
+      doc.roundedRect(14, boxY, 182, boxHeight, 2, 2, "FD");
       doc.setFillColor(13, 110, 253);
-      doc.roundedRect(14, boxY, 3, 38, 1, 1, "F");
+      doc.roundedRect(14, boxY, 3, boxHeight, 1, 1, "F");
 
       const summaryRows = [
         ["Liczba modeli w asortymencie", `${selectedProducts.length}`],
@@ -271,11 +275,11 @@ const ExportPdfModal = ({
       ];
 
       summaryRows.forEach(([label, value], index) => {
-        const rowY = boxY + 7 + index * 7;
+        const rowY = boxY + 6.5 + index * 6.5;
         if (index > 0) {
           doc.setDrawColor(225, 228, 232);
           doc.setLineWidth(0.2);
-          doc.line(20, rowY - 4.5, 190, rowY - 4.5);
+          doc.line(20, rowY - 4.2, 190, rowY - 4.2);
         }
 
         doc.setFont("Arial", "normal");
@@ -293,6 +297,10 @@ const ExportPdfModal = ({
         doc.text(sanitizeText(value), 190, rowY, { align: "right" });
       });
 
+      doc.setDrawColor(225, 228, 232);
+      doc.setLineWidth(0.2);
+      doc.line(20, boxY + 22.5, 190, boxY + 22.5);
+
       doc.setFont("Arial", "normal");
       doc.setFontSize(6.8);
       doc.setTextColor(108, 117, 125);
@@ -301,7 +309,7 @@ const ExportPdfModal = ({
           "Wartość obliczono na podstawie aktualnych cen sprzedaży produktu; ceny zakupu z dokumentów PZ nie są uwzględnione.",
         ),
         20,
-        boxY + 32,
+        boxY + 26.8,
       );
 
       doc.save(
@@ -351,7 +359,7 @@ const ExportPdfModal = ({
             </div>
 
             <div className="row g-4">
-              <div className="col-md-5 border-end pe-3">
+              <div className="col-md-4 border-end pe-3">
                 <h6
                   className="fw-bold text-dark mb-3 small text-uppercase"
                   style={{ letterSpacing: "0.5px" }}
@@ -444,7 +452,7 @@ const ExportPdfModal = ({
                 </div>
               </div>
 
-              <div className="col-md-7">
+              <div className="col-md-8">
                 <h6
                   className="fw-bold text-dark mb-3 small text-uppercase"
                   style={{ letterSpacing: "0.5px" }}
@@ -453,7 +461,7 @@ const ExportPdfModal = ({
                 </h6>
 
                 <div
-                  className="bg-white p-3 rounded border"
+                  className="bg-white rounded border overflow-hidden"
                   style={{ maxHeight: "380px", overflowY: "auto" }}
                 >
                   {selectedProducts.length === 0 ? (
@@ -464,13 +472,36 @@ const ExportPdfModal = ({
                   ) : (
                     <div className="table-responsive">
                       <table className="table table-sm table-hover align-middle small mb-0">
-                        <thead className="table-light">
+                        <thead
+                          className="table-light sticky-top"
+                          style={{ zIndex: 1 }}
+                        >
                           <tr>
-                            <th>Produkt / Model</th>
-                            <th className="text-center">Kod SKU</th>
-                            <th className="text-center">Ilość</th>
-                            <th className="text-end">Cena sprzedaży (zł)</th>
-                            <th className="text-end">Wartość</th>
+                            <th className="ps-3 py-2">Produkt / Model</th>
+                            <th
+                              className="text-center py-2 px-2 text-nowrap"
+                              style={{ width: "1%" }}
+                            >
+                              Kod SKU
+                            </th>
+                            <th
+                              className="text-center py-2 px-2 text-nowrap"
+                              style={{ width: "1%" }}
+                            >
+                              Ilość
+                            </th>
+                            <th
+                              className="text-center py-2 px-2 text-nowrap"
+                              style={{ width: "1%" }}
+                            >
+                              Cena sprzedaży (zł)
+                            </th>
+                            <th
+                              className="text-center pe-3 py-2 ps-2 text-nowrap"
+                              style={{ width: "1%" }}
+                            >
+                              Wartość
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -482,21 +513,21 @@ const ExportPdfModal = ({
                               inventorySummaries[p.id]?.quantity || 0;
                             return (
                               <tr key={p.id}>
-                                <td className="fw-semibold text-dark">
+                                <td className="ps-3 fw-semibold text-dark">
                                   {p.name}
                                 </td>
-                                <td className="text-center text-secondary">
+                                <td className="text-center px-2 text-secondary text-nowrap">
                                   {p.product_code || "—"}
                                 </td>
-                                <td className="text-center">
+                                <td className="text-center px-2 text-nowrap">
                                   <span className="badge bg-light text-dark border">
                                     {quantity} szt.
                                   </span>
                                 </td>
-                                <td className="text-end text-secondary">
+                                <td className="text-center px-2 text-secondary text-nowrap">
                                   {formatCurrency(sellPrice)} zł
                                 </td>
-                                <td className="text-end fw-bold text-dark">
+                                <td className="text-center pe-3 ps-2 fw-bold text-dark text-nowrap">
                                   {formatCurrency(sellPrice * quantity)} zł
                                 </td>
                               </tr>
