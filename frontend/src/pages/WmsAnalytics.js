@@ -37,6 +37,30 @@ const parseLocalDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+const formatChartAxisDate = (tick) => {
+  if (!tick) return "";
+  if (tick.length === 7) {
+    const [year, month] = tick.split("-");
+    return `${month}.${year}`;
+  }
+  const d = parseLocalDate(tick);
+  return d
+    ? d.toLocaleDateString("pl-PL", {
+        day: "2-digit",
+        month: "2-digit",
+      })
+    : tick;
+};
+
+const formatChartTooltipLabel = (label) => {
+  if (!label) return "";
+  if (label.length === 7) {
+    const [year, month] = label.split("-");
+    return `Miesiąc: ${month}.${year}`;
+  }
+  return `Data: ${label}`;
+};
+
 const getTodayStr = () => formatLocalDate(new Date());
 const getDefaultPastStr = (days = 30) => {
   const d = new Date();
@@ -267,6 +291,8 @@ const WmsAnalytics = () => {
     return num === 9999 ? null : Math.max(1, num);
   }, [timeRange, customStartDate, customEndDate]);
 
+  const isMonthlyAggregation = activeDaysCount === null || activeDaysCount > 60;
+
   const timeRangeLabel = useMemo(() => {
     if (timeRange === "7") return "ostatnie 7 dni";
     if (timeRange === "30") return "ostatnie 30 dni";
@@ -482,8 +508,16 @@ const WmsAnalytics = () => {
 
   const dynamicsChartData = useMemo(() => {
     const dataMap = {};
+
     filteredMovements.forEach((m) => {
-      const dateKey = String(m.movement_date || m.created_at).slice(0, 10);
+      const rawDateStr = String(m.movement_date || m.created_at).slice(0, 10);
+      const d = parseLocalDate(rawDateStr);
+      if (!d) return;
+
+      const dateKey = isMonthlyAggregation
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+        : rawDateStr;
+
       if (!dataMap[dateKey]) {
         dataMap[dateKey] = { date: dateKey, Przyjęcia: 0, Wydania: 0 };
       }
@@ -494,10 +528,19 @@ const WmsAnalytics = () => {
         dataMap[dateKey].Wydania += Number(m.quantity || 0);
       }
     });
-    return Object.values(dataMap).sort(
-      (a, b) => parseLocalDate(a.date) - parseLocalDate(b.date),
-    );
-  }, [filteredMovements]);
+
+    return Object.values(dataMap).sort((a, b) => {
+      const dateA =
+        a.date.length === 7
+          ? parseLocalDate(`${a.date}-01`)
+          : parseLocalDate(a.date);
+      const dateB =
+        b.date.length === 7
+          ? parseLocalDate(`${b.date}-01`)
+          : parseLocalDate(b.date);
+      return dateA - dateB;
+    });
+  }, [filteredMovements, isMonthlyAggregation]);
 
   const priceTimelineData = useMemo(() => {
     if (scopeType === "CATEGORY") return [];
@@ -824,7 +867,7 @@ const WmsAnalytics = () => {
                   className="text-muted d-block mt-3"
                   style={{ fontSize: "0.75rem" }}
                 >
-                  * Szacunek na podstawie średniego tempa wydań (
+                  - Szacunek na podstawie średniego tempa wydań (
                   {timeRangeLabel})
                 </small>
               </div>
@@ -923,7 +966,7 @@ const WmsAnalytics = () => {
                   className="text-muted d-block mt-3"
                   style={{ fontSize: "0.75rem" }}
                 >
-                  * Brakujące sztuki × ostatnia cena zakupu z PZ
+                  - Brakujące sztuki × ostatnia cena zakupu z PZ
                 </small>
               </div>
             )}
@@ -937,12 +980,16 @@ const WmsAnalytics = () => {
             <div className="mb-3">
               <h6 className="fw-bold text-secondary mb-0">
                 {scopeType === "CATEGORY"
-                  ? "Dzienna dynamika przyjęć (PZ) i wydań (WZ) w kategorii"
+                  ? isMonthlyAggregation
+                    ? "Miesięczna dynamika przyjęć (PZ) i wydań (WZ) w kategorii"
+                    : "Dzienna dynamika przyjęć (PZ) i wydań (WZ) w kategorii"
                   : "Historia jednostkowych cen zakupu (PZ)"}
               </h6>
               <small className="text-muted">
                 {scopeType === "CATEGORY"
-                  ? "Zestawienie dziennej liczby przyjętych oraz wydanych sztuk w wybranym okresie"
+                  ? isMonthlyAggregation
+                    ? "Zestawienie miesięcznej liczby przyjętych oraz wydanych sztuk w wybranym okresie"
+                    : "Zestawienie dziennej liczby przyjętych oraz wydanych sztuk w wybranym okresie"
                   : "Kształtowanie się ceny zakupu produktu w kolejnych dniach dostaw (najedź na niebieski punkt, aby zobaczyć szczegóły)"}
               </small>
             </div>
@@ -960,13 +1007,7 @@ const WmsAnalytics = () => {
                       <XAxis
                         dataKey="date"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(tick) => {
-                          const d = parseLocalDate(tick);
-                          return d.toLocaleDateString("pl-PL", {
-                            day: "2-digit",
-                            month: "2-digit",
-                          });
-                        }}
+                        tickFormatter={formatChartAxisDate}
                       />
                       <YAxis
                         tick={{ fontSize: 11 }}
@@ -977,7 +1018,7 @@ const WmsAnalytics = () => {
                         cursor={false}
                         isAnimationActive={false}
                         animationDuration={0}
-                        labelFormatter={(label) => `Data: ${label}`}
+                        labelFormatter={formatChartTooltipLabel}
                         formatter={(val) => `${val} szt.`}
                       />
                       <Legend />
@@ -1017,10 +1058,12 @@ const WmsAnalytics = () => {
                       tick={{ fontSize: 11 }}
                       tickFormatter={(tick) => {
                         const d = parseLocalDate(tick);
-                        return d.toLocaleDateString("pl-PL", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        });
+                        return d
+                          ? d.toLocaleDateString("pl-PL", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })
+                          : tick;
                       }}
                     />
                     <YAxis
@@ -1111,8 +1154,9 @@ const WmsAnalytics = () => {
                   Historia przyjęć (PZ) i wydań (WZ) produktu
                 </h6>
                 <small className="text-muted">
-                  Dzienna liczba sztuk przyjętych na stan oraz wydanych z
-                  magazynu
+                  {isMonthlyAggregation
+                    ? "Miesięczna liczba sztuk przyjętych na stan oraz wydanych z magazynu"
+                    : "Dzienna liczba sztuk przyjętych na stan oraz wydanych z magazynu"}
                 </small>
               </div>
               {dynamicsChartData.length === 0 ? (
@@ -1126,13 +1170,7 @@ const WmsAnalytics = () => {
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 10 }}
-                      tickFormatter={(tick) => {
-                        const d = parseLocalDate(tick);
-                        return d.toLocaleDateString("pl-PL", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        });
-                      }}
+                      tickFormatter={formatChartAxisDate}
                     />
                     <YAxis
                       tick={{ fontSize: 10 }}
@@ -1143,7 +1181,7 @@ const WmsAnalytics = () => {
                       cursor={false}
                       isAnimationActive={false}
                       animationDuration={0}
-                      labelFormatter={(label) => `Data: ${label}`}
+                      labelFormatter={formatChartTooltipLabel}
                       formatter={(val) => `${val} szt.`}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
@@ -1243,7 +1281,7 @@ const WmsAnalytics = () => {
                   className="text-muted d-block mt-2"
                   style={{ fontSize: "0.75rem" }}
                 >
-                  * Porównanie ostatniej ceny z PZ ze średnią ważoną ilością
+                  - Porównanie ostatniej ceny z PZ ze średnią ważoną ilością
                 </small>
               </div>
             )}
