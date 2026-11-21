@@ -11,10 +11,10 @@ Aplikacja typu Full-Stack zbudowana w architekturze PERN (PostgreSQL, Express, R
 
 ## Instrukcja uruchomienia aplikacji:
 
-### 1. Pobranie projektu i przejście do katalogu
+### 1. Pobranie repozytorium
 
 ```bash
-git clone https://github.com
+git clone https://github.com/DomBlaziak/wms-warehouse-management-system.git
 cd wms-warehouse-management-system
 ```
 
